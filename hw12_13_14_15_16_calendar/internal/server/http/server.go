@@ -33,6 +33,8 @@ func (s *Server) Start(ctx context.Context) error {
 	mux.HandleFunc("/", handler)
 	mux.HandleFunc("/hello", hello)
 	mux.HandleFunc("/headers", headers)
+	mux.HandleFunc("/swagger.json", swagger)
+	mux.HandleFunc("/swagger/", swaggerUI)
 
 	srv := &http.Server{
 		Addr:         s.host + ":" + strconv.Itoa(s.port),
@@ -97,4 +99,47 @@ func headers(w http.ResponseWriter, req *http.Request) {
 			_, _ = fmt.Fprintf(w, "%v: %v\n", name, h)
 		}
 	}
+}
+
+func swagger(w http.ResponseWriter, req *http.Request) {
+	defer req.Body.Close()
+	w.Header().Set("Content-Type", "application/json")
+	http.ServeFile(w, req, "api/swagger.json")
+}
+
+func swaggerUI(w http.ResponseWriter, req *http.Request) {
+	defer req.Body.Close()
+	w.Header().Set("Content-Type", "text/html")
+	w.Write([]byte(`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar API - Swagger UI</title>
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css">
+    <style>
+        html { box-sizing: border-box; overflow: -moz-scrollbars-vertical; overflow-y: scroll; }
+        *, *:before, *:after { box-sizing: inherit; }
+        body { margin: 0; padding: 0; }
+    </style>
+</head>
+<body>
+    <div id="swagger-ui"></div>
+    <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+    <script>
+        window.onload = function() {
+            const ui = SwaggerUIBundle({
+                url: "/swagger.json",
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIBundle.SwaggerUIStandalonePreset
+                ],
+                layout: "BaseLayout"
+            });
+        };
+    </script>
+</body>
+</html>`))
 }

@@ -1,0 +1,136 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Calendar Service API",
+    "description": "Swagger specification for the calendar service skeleton.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8081",
+      "description": "Local development server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "service",
+      "description": "Service health and demo endpoints"
+    },
+    {
+      "name": "calendar",
+      "description": "Calendar event schemas for future API endpoints"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "tags": [
+          "service"
+        ],
+        "summary": "Root hello-world endpoint",
+        "description": "Returns a simple hello-world response.",
+        "operationId": "root",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "Hello, World!"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hello": {
+      "get": {
+        "tags": [
+          "service"
+        ],
+        "summary": "Hello endpoint",
+        "description": "Returns a simple hello response.",
+        "operationId": "hello",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "hello\n"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/headers": {
+      "get": {
+        "tags": [
+          "service"
+        ],
+        "summary": "Request headers endpoint",
+        "description": "Returns request headers as plain text.",
+        "operationId": "headers",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "User-Agent: curl/8.0.0\nAccept: */*\n"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Event": {
+        "type": "object",
+        "description": "Calendar event model used by the service storage layer.",
+        "required": [
+          "id",
+          "title",
+          "dateTime"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "example": 1
+          },
+          "title": {
+            "type": "string",
+            "example": "Team meeting"
+          },
+          "dateTime": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-06-04T12:00:00Z"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "internal server error"
+          }
+        }
+      }
+    }
+  }
+}
