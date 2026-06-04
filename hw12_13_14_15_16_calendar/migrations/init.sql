@@ -2,10 +2,13 @@
 -- +goose StatementBegin
 CREATE TABLE event
 (
-    id         bigint primary key GENERATED ALWAYS AS IDENTITY,
-    title       text not null,
-    date_time timestamptz not null default now()
-
+    id             bigint primary key GENERATED ALWAYS AS IDENTITY,
+    title          text        not null,
+    date_time      timestamptz not null,
+    end_date_time  timestamptz not null,
+    description    text,
+    user_id        bigint      not null,
+    notify_before  bigint
 );
 
 -- CREATE TABLE role
