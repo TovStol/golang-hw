@@ -1,0 +1,14 @@
+linters:
+  disable-all: true
+  enable:
+    - govet
+    - staticcheck
+    - unused
+    - gosimple
+    - ineffassign
+
+linters-settings:
+  govet:
+    disable:
+      - shadow
+      - fieldalignment
