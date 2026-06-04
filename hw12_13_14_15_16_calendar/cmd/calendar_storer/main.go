@@ -13,6 +13,7 @@ import (
 
 	"github.com/TovStol/hw12_13_14_15_calendar/internal/kafka"
 	"github.com/TovStol/hw12_13_14_15_calendar/internal/logger"
+	"github.com/TovStol/hw12_13_14_15_calendar/internal/metrics"
 	sqlstorage "github.com/TovStol/hw12_13_14_15_calendar/internal/storage/sql"
 )
 
@@ -52,13 +53,17 @@ func main() {
 				break
 			}
 			logg.Error("ReadNotification error: " + err.Error())
+			metrics.RecordStorerError()
 			continue
 		}
 
+		metrics.RecordNotificationReceived()
 		if err := storage.SaveNotification(n); err != nil {
 			logg.Error("SaveNotification error: " + err.Error())
+			metrics.RecordStorerError()
 		} else {
 			logg.Info("stored notification for event " + n.Title)
+			metrics.RecordNotificationStored()
 		}
 	}
 

@@ -12,6 +12,7 @@ import (
 
 	"github.com/TovStol/hw12_13_14_15_calendar/internal/kafka"
 	"github.com/TovStol/hw12_13_14_15_calendar/internal/logger"
+	"github.com/TovStol/hw12_13_14_15_calendar/internal/metrics"
 	"github.com/TovStol/hw12_13_14_15_calendar/internal/storage/models"
 	sqlstorage "github.com/TovStol/hw12_13_14_15_calendar/internal/storage/sql"
 )
@@ -60,13 +61,16 @@ func main() {
 }
 
 func runScan(ctx context.Context, logg *logger.Logger, storage *sqlstorage.SQLStorage, producer kafka.Producer) {
+	metrics.RecordSchedulerRun()
 	now := time.Now()
 
 	events, err := storage.FindEventsToNotify(now)
 	if err != nil {
 		logg.Error("FindEventsToNotify error: " + err.Error())
+		metrics.RecordSchedulerError()
 	} else {
 		for _, e := range events {
+			metrics.RecordEventProcessed()
 			n := models.Notification{
 				EventID:   e.ID,
 				Title:     e.Title,
@@ -75,8 +79,10 @@ func runScan(ctx context.Context, logg *logger.Logger, storage *sqlstorage.SQLSt
 			}
 			if err := producer.SendNotification(ctx, n); err != nil {
 				logg.Error("SendNotification error: " + err.Error())
+				metrics.RecordSchedulerError()
 			} else {
 				logg.Info("sent notification for event " + e.Title)
+				metrics.RecordNotificationSent()
 			}
 		}
 	}
@@ -84,5 +90,6 @@ func runScan(ctx context.Context, logg *logger.Logger, storage *sqlstorage.SQLSt
 	oneYearAgo := now.AddDate(-1, 0, 0)
 	if err := storage.DeleteOldEvents(oneYearAgo); err != nil {
 		logg.Error("DeleteOldEvents error: " + err.Error())
+		metrics.RecordSchedulerError()
 	}
 }

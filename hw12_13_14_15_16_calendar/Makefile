@@ -31,7 +31,8 @@ test:
 	$(GO) test -race ./internal/...
 
 install-lint-deps:
-	(which golangci-lint > /dev/null) || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.62.2
+	@rm -f $(shell go env GOPATH)/bin/golangci-lint
+	GOPROXY=https://proxy.golang.org,direct go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 
 lint: install-lint-deps
 	golangci-lint run ./...
