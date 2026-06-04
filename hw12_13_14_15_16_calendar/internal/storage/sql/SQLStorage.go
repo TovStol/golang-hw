@@ -145,3 +145,29 @@ func (r *SQLStorage) ExecuteQuery(query string) {
 		return
 	}
 }
+
+func (r *SQLStorage) FindEventsToNotify(now time.Time) ([]models.Event, error) {
+	var res []models.Event
+	err := r.db.Select(&res,
+		`SELECT * FROM event
+		 WHERE notify_before > 0
+		   AND date_time - (notify_before / 1000 * interval '1 microsecond') <= $1
+		   AND date_time > $1`,
+		now)
+	return res, err
+}
+
+func (r *SQLStorage) DeleteOldEvents(before time.Time) error {
+	_, err := r.db.Exec(
+		"DELETE FROM event WHERE date_time < $1", before)
+	return err
+}
+
+func (r *SQLStorage) SaveNotification(n models.Notification) error {
+	_, err := r.db.Exec(
+		`INSERT INTO notification (event_id, title, event_date, user_id)
+		 VALUES ($1, $2, $3, $4)
+		 ON CONFLICT (event_id) DO NOTHING`,
+		n.EventID, n.Title, n.EventDate, n.UserID)
+	return err
+}
