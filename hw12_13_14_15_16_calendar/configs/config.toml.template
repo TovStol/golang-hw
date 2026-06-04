@@ -1,0 +1,7 @@
+Level = "${LEVEL}"
+LogLocation = "${LOG_LOCATION}"
+DbDriverName = "${DB_DRIVER_NAME}"
+Dsn = '${DSN}'
+Host = "${HOST}"
+Port = ${PORT}
+Storage = "${STORAGE}"

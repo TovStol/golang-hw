@@ -10,6 +10,7 @@ import (
 
 	"github.com/TovStol/hw12_13_14_15_calendar/internal/app"
 	"github.com/TovStol/hw12_13_14_15_calendar/internal/logger"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type Server struct {
@@ -35,6 +36,7 @@ func (s *Server) Start(ctx context.Context) error {
 	mux.HandleFunc("/headers", headers)
 	mux.HandleFunc("/swagger.json", swagger)
 	mux.HandleFunc("/swagger/", swaggerUI)
+	mux.Handle("/metrics", promhttp.Handler())
 
 	RegisterHandlers(mux, NewCalendarHandlers(s.application))
 
