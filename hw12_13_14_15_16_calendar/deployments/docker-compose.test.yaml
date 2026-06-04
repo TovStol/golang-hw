@@ -1,0 +1,150 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: calendar_test_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: idm_tests
+    networks:
+      - calendar_test_network
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: calendar_test_zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_log:/var/lib/zookeeper/log
+    networks:
+      - calendar_test_network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: calendar_test_kafka
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "kafka:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - calendar_test_network
+
+  migrations:
+    image: postgres:16-alpine
+    container_name: calendar_test_migrations
+    depends_on:
+      - postgres
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: idm_tests
+    volumes:
+      - ../build/run-migrations.sh:/run-migrations.sh
+    command: sh /run-migrations.sh
+    restart: "no"
+    networks:
+      - calendar_test_network
+
+  calendar:
+    build:
+      context: ..
+      dockerfile: build/Dockerfile.calendar
+    container_name: calendar_test_app
+    depends_on:
+      - postgres
+      - migrations
+    environment:
+      - LEVEL=INFO
+      - LOG_LOCATION=
+      - DB_DRIVER_NAME=postgres
+      - DSN=host=postgres port=5432 user=postgres password=postgres dbname=idm_tests sslmode=disable
+      - HOST=0.0.0.0
+      - PORT=8888
+      - STORAGE=postgres
+    restart: unless-stopped
+    networks:
+      - calendar_test_network
+
+  scheduler:
+    build:
+      context: ..
+      dockerfile: build/Dockerfile.scheduler
+    container_name: calendar_test_scheduler
+    depends_on:
+      - postgres
+      - kafka
+      - migrations
+    environment:
+      - LEVEL=INFO
+      - LOG_LOCATION=
+      - DB_DRIVER_NAME=postgres
+      - DSN=host=postgres port=5432 user=postgres password=postgres dbname=idm_tests sslmode=disable
+      - KAFKA_BROKERS=kafka:9092
+      - KAFKA_TOPIC=notifications
+      - SCAN_INTERVAL=10s
+    restart: unless-stopped
+    networks:
+      - calendar_test_network
+
+  storer:
+    build:
+      context: ..
+      dockerfile: build/Dockerfile.storer
+    container_name: calendar_test_storer
+    depends_on:
+      - postgres
+      - kafka
+      - migrations
+    environment:
+      - LEVEL=INFO
+      - LOG_LOCATION=
+      - DB_DRIVER_NAME=postgres
+      - DSN=host=postgres port=5432 user=postgres password=postgres dbname=idm_tests sslmode=disable
+      - KAFKA_BROKERS=kafka:9092
+      - KAFKA_TOPIC=notifications
+      - KAFKA_GROUP_ID=storer-group
+    restart: unless-stopped
+    networks:
+      - calendar_test_network
+
+  integration-tests:
+    build:
+      context: ..
+      dockerfile: build/Dockerfile.integration
+    container_name: calendar_integration_tests
+    depends_on:
+      - calendar
+      - scheduler
+      - storer
+    environment:
+      - CALENDAR_URL=http://calendar:8888
+      - PG_DSN=host=postgres port=5432 user=postgres password=postgres dbname=idm_tests sslmode=disable
+    command: sleep infinity
+    restart: "no"
+    networks:
+      - calendar_test_network
+
+volumes:
+  zookeeper_data:
+  zookeeper_log:
+  kafka_data:
+
+networks:
+  calendar_test_network:
+    driver: bridge

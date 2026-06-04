@@ -22,14 +22,18 @@ func New(dbDriverName string, dsn string) *SQLStorage {
 }
 
 func (r *SQLStorage) Connect() error {
-	r.db = sqlx.MustConnect(r.dbDriverName, r.dsn)
+	var err error
+	r.db, err = sqlx.Connect(r.dbDriverName, r.dsn)
+	if err != nil {
+		return err
+	}
 	// Настройки ниже конфигурируют пулл подключений к базе данных. Их названия стандартны для большинства библиотек.
 	// Ознакомиться с их описанием можно на примере документации Hikari pool:
 	// https://github.com/brettwooldridge/HikariCP?tab=readme-ov-file#gear-configuration-knobs-baby
-	r.db.SetMaxIdleConns(5)
-	r.db.SetMaxOpenConns(20)
-	r.db.SetConnMaxLifetime(1 * time.Minute)
-	r.db.SetConnMaxIdleTime(10 * time.Minute)
+	r.db.SetMaxIdleConns(25)
+	r.db.SetMaxOpenConns(100)
+	r.db.SetConnMaxLifetime(5 * time.Minute)
+	r.db.SetConnMaxIdleTime(1 * time.Minute)
 	return nil
 }
 

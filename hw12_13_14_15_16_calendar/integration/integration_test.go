@@ -18,9 +18,13 @@ import (
 )
 
 const (
-	calendarURL = "http://127.0.0.1:8081"
-	pgDSN       = "host=127.0.0.1 port=5432 user=postgres password=postgres dbname=idm_tests sslmode=disable"
+	calendarURL = "http://calendar:8888"
+	pgDSN       = "host=postgres port=5432 user=postgres password=postgres dbname=idm_tests sslmode=disable"
 )
+
+var httpClient = &http.Client{
+	Timeout: 60 * time.Second,
+}
 
 // helpers
 
@@ -35,7 +39,7 @@ func mustJSON(t *testing.T, v any) *bytes.Reader {
 
 func createEvent(t *testing.T, input internalhttp.EventInput) internalhttp.EventResponse {
 	t.Helper()
-	resp, err := http.Post(calendarURL+"/events", "application/json", mustJSON(t, input))
+	resp, err := httpClient.Post(calendarURL+"/events", "application/json", mustJSON(t, input))
 	if err != nil {
 		t.Fatalf("POST /events: %v", err)
 	}
@@ -54,7 +58,7 @@ func deleteEvent(t *testing.T, id int64) {
 	t.Helper()
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodDelete,
 		fmt.Sprintf("%s/events/%d", calendarURL, id), nil)
-	resp, err := (&http.Client{}).Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		t.Fatalf("DELETE /events/%d: %v", id, err)
 	}
@@ -76,7 +80,7 @@ func pgDB(t *testing.T) *sql.DB {
 // ── Calendar HTTP API ──────────────────────────────────────────────────────────
 
 func TestIntegration_CalendarHealthCheck(t *testing.T) {
-	resp, err := http.Get(calendarURL + "/")
+	resp, err := httpClient.Get(calendarURL + "/")
 	if err != nil {
 		t.Fatalf("GET /: %v", err)
 	}
@@ -124,7 +128,7 @@ func TestIntegration_UpdateEvent(t *testing.T) {
 		fmt.Sprintf("%s/events/%d", calendarURL, ev.ID),
 		mustJSON(t, updated))
 	req.Header.Set("Content-Type", "application/json")
-	resp, err := (&http.Client{}).Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		t.Fatalf("PUT /events/%d: %v", ev.ID, err)
 	}
@@ -150,7 +154,7 @@ func TestIntegration_DeleteEvent(t *testing.T) {
 
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodDelete,
 		fmt.Sprintf("%s/events/%d", calendarURL, ev.ID), nil)
-	resp, err := (&http.Client{}).Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		t.Fatalf("DELETE /events/%d: %v", ev.ID, err)
 	}

@@ -36,4 +36,18 @@ install-lint-deps:
 lint: install-lint-deps
 	golangci-lint run ./...
 
-.PHONY: build run build-img run-img version test lint run-scheduler run-storer
+up:
+	cd deployments && docker compose up -d
+
+down:
+	cd deployments && docker compose down
+
+integration-tests:
+	cd deployments && docker compose -f docker-compose.test.yaml down -v || true
+	cd deployments && docker compose -f docker-compose.test.yaml build
+	cd deployments && docker compose -f docker-compose.test.yaml up -d
+	sleep 45
+	cd deployments && docker compose -f docker-compose.test.yaml exec integration-tests go test -tags integration -v -timeout 120s ./integration/...
+	cd deployments && docker compose -f docker-compose.test.yaml down -v
+
+.PHONY: build run build-img run-img version test lint run-scheduler run-storer up down integration-tests

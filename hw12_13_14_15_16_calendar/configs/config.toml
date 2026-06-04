@@ -3,5 +3,5 @@ LogLocation = "/home/atovstolik/projects/golang-hw/hw12_13_14_15_16_calendar/log
 DbDriverName = "postgres"
 Dsn = 'host=127.0.0.1 port=5432 user=postgres password=postgres dbname=idm_tests sslmode=disable'
 Host = "127.0.0.1"
-Port = 8081
+Port = 8888
 Storage = "inner"

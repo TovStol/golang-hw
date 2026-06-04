@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -45,6 +46,20 @@ func main() {
 		calendar = app.New(logg, storage)
 	} else {
 		storage := sqlstorage.New(config.DBDriverName, config.Dsn)
+		// Retry connection with backoff
+		var err error
+		for i := 0; i < 10; i++ {
+			err = storage.Connect()
+			if err == nil {
+				break
+			}
+			logg.Info("waiting for database... (attempt " + fmt.Sprintf("%d", i+1) + "/10)")
+			time.Sleep(2 * time.Second)
+		}
+		if err != nil {
+			logg.Error("failed to connect to database after retries: " + err.Error())
+			return
+		}
 		calendar = app.New(logg, storage)
 	}
 
