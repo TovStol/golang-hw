@@ -1,0 +1,8 @@
+Level = "${LEVEL}"
+LogLocation = "${LOG_LOCATION}"
+DbDriverName = "${DB_DRIVER_NAME}"
+Dsn = '${DSN}'
+
+KafkaBrokers = ["${KAFKA_BROKERS}"]
+KafkaTopic = "${KAFKA_TOPIC}"
+ScanInterval = "${SCAN_INTERVAL}"

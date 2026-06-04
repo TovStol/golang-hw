@@ -22,14 +22,18 @@ func New(dbDriverName string, dsn string) *SQLStorage {
 }
 
 func (r *SQLStorage) Connect() error {
-	r.db = sqlx.MustConnect(r.dbDriverName, r.dsn)
+	var err error
+	r.db, err = sqlx.Connect(r.dbDriverName, r.dsn)
+	if err != nil {
+		return err
+	}
 	// Настройки ниже конфигурируют пулл подключений к базе данных. Их названия стандартны для большинства библиотек.
 	// Ознакомиться с их описанием можно на примере документации Hikari pool:
 	// https://github.com/brettwooldridge/HikariCP?tab=readme-ov-file#gear-configuration-knobs-baby
-	r.db.SetMaxIdleConns(5)
-	r.db.SetMaxOpenConns(20)
-	r.db.SetConnMaxLifetime(1 * time.Minute)
-	r.db.SetConnMaxIdleTime(10 * time.Minute)
+	r.db.SetMaxIdleConns(25)
+	r.db.SetMaxOpenConns(100)
+	r.db.SetConnMaxLifetime(5 * time.Minute)
+	r.db.SetConnMaxIdleTime(1 * time.Minute)
 	return nil
 }
 
@@ -144,4 +148,30 @@ func (r *SQLStorage) ExecuteQuery(query string) {
 	if err != nil {
 		return
 	}
+}
+
+func (r *SQLStorage) FindEventsToNotify(now time.Time) ([]models.Event, error) {
+	var res []models.Event
+	err := r.db.Select(&res,
+		`SELECT * FROM event
+		 WHERE notify_before > 0
+		   AND date_time - (notify_before / 1000 * interval '1 microsecond') <= $1
+		   AND date_time > $1`,
+		now)
+	return res, err
+}
+
+func (r *SQLStorage) DeleteOldEvents(before time.Time) error {
+	_, err := r.db.Exec(
+		"DELETE FROM event WHERE date_time < $1", before)
+	return err
+}
+
+func (r *SQLStorage) SaveNotification(n models.Notification) error {
+	_, err := r.db.Exec(
+		`INSERT INTO notification (event_id, title, event_date, user_id)
+		 VALUES ($1, $2, $3, $4)
+		 ON CONFLICT (event_id) DO NOTHING`,
+		n.EventID, n.Title, n.EventDate, n.UserID)
+	return err
 }
