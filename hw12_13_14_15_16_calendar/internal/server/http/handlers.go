@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/TovStol/hw12_13_14_15_calendar/internal/app"
+	"github.com/TovStol/hw12_13_14_15_calendar/internal/metrics"
 	"github.com/TovStol/hw12_13_14_15_calendar/internal/storage/models"
 )
 
@@ -24,17 +25,23 @@ func (h *CalendarHandlers) CreateEvent(ctx context.Context, input EventInput) (E
 		return EventResponse{}, err
 	}
 	event.ID = id
+	metrics.RecordEventCreated()
 	return modelToResponse(event), nil
 }
 
 func (h *CalendarHandlers) UpdateEvent(ctx context.Context, id int64, input EventInput) (EventResponse, error) {
 	event := inputToModel(id, input)
 	h.app.Update(ctx, event)
+	metrics.RecordEventUpdated()
 	return modelToResponse(event), nil
 }
 
 func (h *CalendarHandlers) DeleteEvent(ctx context.Context, id int64) error {
-	return h.app.DeleteByID(ctx, id)
+	err := h.app.DeleteByID(ctx, id)
+	if err == nil {
+		metrics.RecordEventDeleted()
+	}
+	return err
 }
 
 func (h *CalendarHandlers) ListEventsByDay(ctx context.Context, date time.Time) ([]EventResponse, error) {

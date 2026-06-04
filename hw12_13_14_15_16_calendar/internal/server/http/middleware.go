@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/TovStol/hw12_13_14_15_calendar/internal/logger"
+	"github.com/TovStol/hw12_13_14_15_calendar/internal/metrics"
 )
 
 type responseWriter struct {
@@ -40,6 +41,9 @@ func loggingMiddleware(logg *logger.Logger, next http.Handler) http.Handler {
 		}
 
 		next.ServeHTTP(writer, r)
+
+		duration := time.Since(start).Seconds()
+		metrics.RecordHTTPRequest(r.Method, r.URL.Path, writer.statusCode, duration)
 
 		logg.Info(fmt.Sprintf(
 			"%s [%s] %s %s %s %d %s %q",

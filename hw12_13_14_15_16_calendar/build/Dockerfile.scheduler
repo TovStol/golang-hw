@@ -1,0 +1,30 @@
+# Build stage
+FROM golang:1.24-alpine AS builder
+
+WORKDIR /app
+
+# Copy go mod files
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Build the scheduler binary
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o calendar_scheduler ./cmd/calendar_scheduler
+
+# Runtime stage
+FROM alpine:latest
+
+RUN apk --no-cache add ca-certificates gettext
+
+WORKDIR /root/
+
+# Copy binary from builder
+COPY --from=builder /app/calendar_scheduler .
+
+# Copy config templates
+COPY --from=builder /app/configs ./configs
+
+# Generate config from template and run
+CMD sh -c "envsubst < ./configs/scheduler_config.toml.template > ./configs/scheduler_config.toml && ./calendar_scheduler -config ./configs/scheduler_config.toml"
