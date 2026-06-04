@@ -36,9 +36,11 @@ func (s *Server) Start(ctx context.Context) error {
 	mux.HandleFunc("/swagger.json", swagger)
 	mux.HandleFunc("/swagger/", swaggerUI)
 
+	RegisterHandlers(mux, NewCalendarHandlers(s.application))
+
 	srv := &http.Server{
 		Addr:         s.host + ":" + strconv.Itoa(s.port),
-		Handler:      loggingMiddleware(s.logger, mux),
+		Handler:      corsMiddleware(loggingMiddleware(s.logger, mux)),
 		ReadTimeout:  5 * time.Second,  // ⚠️ Критически важно
 		WriteTimeout: 10 * time.Second, // ⚠️
 		IdleTimeout:  60 * time.Second, // ⚠️ для HTTP/1.1 keep-alive

@@ -21,18 +21,10 @@ func New(logger *logger.Logger, storage basic.Storage) *App {
 	}
 }
 
-func (a *App) CreateEvent(ctx context.Context, id int64, title string) error {
+func (a *App) Create(ctx context.Context, event models.Event) (int64, error) {
 	_, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	_, err := a.Storage.Create(models.Event{
-		ID:       id,
-		Title:    title,
-		DateTime: time.Now(),
-	})
-	if err != nil {
-		return err
-	}
-	return nil
+	return a.Storage.Create(event)
 }
 
 func (a *App) Update(ctx context.Context, event models.Event) {

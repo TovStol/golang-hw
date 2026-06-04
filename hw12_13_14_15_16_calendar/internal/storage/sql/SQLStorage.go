@@ -43,7 +43,9 @@ func (r *SQLStorage) Close() error {
 
 func (r *SQLStorage) Create(event models.Event) (id int64, err error) {
 	result, err := r.db.Query(
-		"INSERT INTO event (name) VALUES($1) RETURNING id", event.Title)
+		`INSERT INTO event (title, date_time, end_date_time, description, user_id, notify_before)
+		 VALUES($1, $2, $3, $4, $5, $6) RETURNING id`,
+		event.Title, event.DateTime, event.EndDateTime, event.Description, event.UserID, int64(event.NotifyBefore))
 	if err != nil {
 		return 0, err
 	}
@@ -55,8 +57,10 @@ func (r *SQLStorage) Create(event models.Event) (id int64, err error) {
 }
 
 func (r *SQLStorage) Update(event models.Event) {
-	r.db.Query(
-		"UPDATE event SET title =$1, date_time = $2 WHERE id = $3", event.Title, event.DateTime, event.ID)
+	r.db.Query( //nolint:errcheck
+		`UPDATE event SET title=$1, date_time=$2, end_date_time=$3, description=$4, user_id=$5, notify_before=$6
+		 WHERE id=$7`,
+		event.Title, event.DateTime, event.EndDateTime, event.Description, event.UserID, int64(event.NotifyBefore), event.ID)
 }
 
 func (r *SQLStorage) DeleteByID(eventID int64) (err error) {
@@ -66,26 +70,32 @@ func (r *SQLStorage) DeleteByID(eventID int64) (err error) {
 }
 
 func (r *SQLStorage) FindEventsByDay(date time.Time) (res []models.Event, err error) {
+	start := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, date.Location())
+	end := start.Add(24 * time.Hour)
 	err = r.db.Select(&res,
-		"SELECT * from event WHERE date_time = $1", date.Format("2006-01-02"))
+		"SELECT * FROM event WHERE date_time >= $1 AND date_time < $2", start, end)
 	return res, err
 }
 
 func (r *SQLStorage) FindEventsByWeek(date time.Time) (res []models.Event, err error) {
+	start := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, date.Location())
+	end := start.AddDate(0, 0, 7)
 	err = r.db.Select(&res,
-		"SELECT * from event WHERE date_time = $1 AND $2", date.Format("2006-01-02"), date.AddDate(0, 0, 7))
+		"SELECT * FROM event WHERE date_time >= $1 AND date_time < $2", start, end)
 	return res, err
 }
 
 func (r *SQLStorage) FindEventsByMonth(date time.Time) (res []models.Event, err error) {
+	start := time.Date(date.Year(), date.Month(), 1, 0, 0, 0, 0, date.Location())
+	end := start.AddDate(0, 1, 0)
 	err = r.db.Select(&res,
-		"SELECT * from event WHERE date_time = $1 AND $2", date.Format("2006-01-02"), date.AddDate(0, 0, 30))
+		"SELECT * FROM event WHERE date_time >= $1 AND date_time < $2", start, end)
 	return res, err
 }
 
-func (r *SQLStorage) FindByID(id int64) (res, err error) {
+func (r *SQLStorage) FindByID(id int64) (res models.Event, err error) {
 	err = r.db.Get(&res,
-		"SELECT * from event where id = $1", id)
+		"SELECT * FROM event WHERE id = $1", id)
 	return res, err
 }
 
