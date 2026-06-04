@@ -8,6 +8,8 @@ import (
 	"syscall"
 	"time"
 
+	_ "github.com/lib/pq"
+
 	"github.com/TovStol/hw12_13_14_15_calendar/internal/app"
 	"github.com/TovStol/hw12_13_14_15_calendar/internal/logger"
 	internalhttp "github.com/TovStol/hw12_13_14_15_calendar/internal/server/http"

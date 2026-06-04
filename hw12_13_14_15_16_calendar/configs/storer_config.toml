@@ -1,0 +1,8 @@
+Level = "INFO"
+LogLocation = ""
+DbDriverName = "postgres"
+Dsn = 'host=127.0.0.1 port=5432 user=postgres password=postgres dbname=idm_tests sslmode=disable'
+
+KafkaBrokers = ["localhost:9092"]
+KafkaTopic = "notifications"
+KafkaGroupID = "storer-group"
