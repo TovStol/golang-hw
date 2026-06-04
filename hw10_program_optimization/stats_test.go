@@ -1,3 +1,4 @@
+//go:build !bench
 // +build !bench
 
 package hw10programoptimization
@@ -35,5 +36,64 @@ func TestGetDomainStat(t *testing.T) {
 		result, err := GetDomainStat(bytes.NewBufferString(data), "unknown")
 		require.NoError(t, err)
 		require.Equal(t, DomainStat{}, result)
+	})
+
+	t.Run("empty input", func(t *testing.T) {
+		result, err := GetDomainStat(bytes.NewBufferString(""), "com")
+		require.NoError(t, err)
+		require.Equal(t, DomainStat{}, result)
+	})
+
+	t.Run("invalid JSON", func(t *testing.T) {
+		invalidData := `{"Id":1,"Name":"Test","Email":"test@example.com"`
+		_, err := GetDomainStat(bytes.NewBufferString(invalidData), "com")
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "unmarshal error")
+	})
+
+	t.Run("case insensitive domain matching", func(t *testing.T) {
+		caseData := `{"Id":1,"Name":"Test","Email":"user@EXAMPLE.COM"}
+{"Id":2,"Name":"Test2","Email":"user2@example.com"}`
+		result, err := GetDomainStat(bytes.NewBufferString(caseData), "com")
+		require.NoError(t, err)
+		require.Equal(t, DomainStat{
+			"example.com": 2,
+		}, result)
+	})
+
+	t.Run("multiple same domains", func(t *testing.T) {
+		multiData := `{"Id":1,"Name":"Test","Email":"user1@test.com"}
+{"Id":2,"Name":"Test2","Email":"user2@test.com"}
+{"Id":3,"Name":"Test3","Email":"user3@test.com"}`
+		result, err := GetDomainStat(bytes.NewBufferString(multiData), "com")
+		require.NoError(t, err)
+		require.Equal(t, DomainStat{
+			"test.com": 3,
+		}, result)
+	})
+
+	t.Run("mixed domains", func(t *testing.T) {
+		mixedData := `{"Id":1,"Name":"Test","Email":"user1@test.com"}
+{"Id":2,"Name":"Test2","Email":"user2@test.org"}
+{"Id":3,"Name":"Test3","Email":"user3@test.net"}
+{"Id":4,"Name":"Test4","Email":"user4@test.com"}`
+		result, err := GetDomainStat(bytes.NewBufferString(mixedData), "com")
+		require.NoError(t, err)
+		require.Equal(t, DomainStat{
+			"test.com": 2,
+		}, result)
+	})
+
+	t.Run("empty lines in input", func(t *testing.T) {
+		emptyLinesData := `{"Id":1,"Name":"Test","Email":"user1@test.com"}
+
+{"Id":2,"Name":"Test2","Email":"user2@test.com"}
+
+`
+		result, err := GetDomainStat(bytes.NewBufferString(emptyLinesData), "com")
+		require.NoError(t, err)
+		require.Equal(t, DomainStat{
+			"test.com": 2,
+		}, result)
 	})
 }

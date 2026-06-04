@@ -1,0 +1,12 @@
+linters:
+  disable:
+    - depguard
+
+linters-settings:
+  depguard:
+    rules:
+      main:
+        allow:
+          - $gostd
+          - github.com/json-iterator/go
+          - github.com/stretchr/testify
